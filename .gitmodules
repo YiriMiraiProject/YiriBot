@@ -1,0 +1,3 @@
+[submodule "YiriMiraiOneBot"]
+	path = YiriMiraiOneBot
+	url = https://github.com/YiriMiraiProject/YiriMiraiOneBot.git
