@@ -29,6 +29,10 @@ class ChatBot:
         self._bot.subscribe(MessagePrivateEvent, self._on_message_received)
         self._bot.subscribe(MessageGroupEvent, self._on_message_received)
 
+    async def _error_handler(self, exception: BaseException) -> None:
+        # TODO: 有错误自动通过控制台打印，并发送给原调用者
+        pass
+
     async def _on_message_received(
         self, event: Union[MessagePrivateEvent, MessageGroupEvent]
     ):
@@ -36,7 +40,10 @@ class ChatBot:
 
         if message.startswith(self.command_prefix):
             asyncio.create_task(
-                self.router.execute_command(message.removeprefix(self.command_prefix))
+                self.router.execute_command(
+                    message.removeprefix(self.command_prefix),
+                    error_handler=self._error_handler,
+                )
             )
 
     def register_function_as_endpoint(self, command: str, handler: Callable):

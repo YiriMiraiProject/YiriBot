@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, Dict, Optional, Set, List
+from typing import Awaitable, Callable, Dict, Optional, Set, List
 import shlex
 
 from mirai_onebot.event import EventBus
@@ -13,10 +13,18 @@ class CommandRouter:
         self.event_bus = event_bus
         self.command_endpoints: Dict[str, Set[Endpoint]] = {}
 
-    async def execute_command(self, command: str):
-        """执行命令，传入原始命令即可。不带前缀。"""
+    async def execute_command(
+        self,
+        command: str,
+        error_handler: Optional[Callable[[BaseException], Awaitable[None]]] = None,
+    ):
+        """执行命令，传入原始命令即可。不带 command_prefix 。"""
         endpoints = self.match_endpoint(command)
-        await self.execute_endpoints(endpoints)
+        try:
+            await self.execute_endpoints(command, endpoints)
+        except BaseException as e:
+            if error_handler is not None:
+                await error_handler(e)
 
     def match_endpoint(self, command: str) -> Set[Endpoint]:
         """匹配 endpoint"""
@@ -34,14 +42,14 @@ class CommandRouter:
 
         return set(endpoints)
 
-    async def execute_endpoints(self, endpoints: Set[Endpoint]):
+    async def execute_endpoints(self, command: str, endpoints: Set[Endpoint]):
         async_tasks: List[asyncio.Task] = []
 
         for endpoint in endpoints:
             if endpoint.is_async:
-                async_tasks.append(asyncio.create_task(endpoint.aexec()))
+                async_tasks.append(asyncio.create_task(endpoint.aexec(command)))
             else:
-                endpoint.exec()
+                endpoint.exec(command)
 
         if len(async_tasks) >= 1:
             await asyncio.wait(async_tasks)

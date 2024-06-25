@@ -11,8 +11,8 @@ bot = ChatBot(
 
 
 @bot.on("hello")
-def handle_hello():
-    print("hello")
+def handle_hello(arg: str):
+    print("hello", arg)
 
 
 bot.run()
