@@ -1,13 +1,5 @@
-# isort: off
-# autopep8: off
-import sys
-
-sys.path.append("..")
-
 from yiribot import ChatBot  # noqa: E402
-from YiriOneBot.mirai_onebot import ReverseWebsocketAdapter  # noqa: E402
-# isort: on
-# autopep8: on
+from mirai_onebot import ReverseWebsocketAdapter  # noqa: E402
 
 
 bot = ChatBot(
@@ -18,12 +10,9 @@ bot = ChatBot(
 )
 
 
-@bot.on_command("hello")
-async def handle_hello(message: str):
-    print("handle command hello")
-    print(f"{message}")
-
-    await bot.send_private_message("2389472915", "Hello World")
+@bot.on("hello")
+def handle_hello():
+    print("hello")
 
 
 bot.run()

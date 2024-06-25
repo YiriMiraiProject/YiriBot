@@ -1,12 +1,13 @@
-from typing import Callable, Dict, Optional, Set, Union
-import shlex
-from mirai_onebot import Bot, MessagePrivateEvent, MessageGroupEvent
-from mirai_onebot.adapters.base import Adapter
-from yiribot.utils import develop_logger
 import asyncio
+from typing import Optional, Callable, Union
+from mirai_onebot import Bot
+from mirai_onebot.adapters.base import Adapter
+from mirai_onebot.event import MessageGroupEvent, MessagePrivateEvent
+from .router import CommandRouter
+from .utils import develop_logger
 
 
-class ChatBot(Bot):
+class ChatBot:
     def __init__(
         self,
         adapter: Adapter,
@@ -17,74 +18,46 @@ class ChatBot(Bot):
         """
         聊天机器人类。
         """
-        super().__init__(
-            adapter=adapter,
-            bot_platform=bot_platform,
-            bot_user_id=bot_user_id,
+        self.adapter = adapter
+        self.command_prefix = command_prefix
+        self._bot = Bot(
+            adapter=adapter, bot_user_id=bot_user_id, bot_platform=bot_platform
         )
 
-        self.command_prefix = command_prefix
+        self.router = CommandRouter(event_bus=self._bot.bus)
 
-        self.command_handlers: Dict[str, Set[Callable]] = {}
+        self._bot.subscribe(MessagePrivateEvent, self._on_message_received)
+        self._bot.subscribe(MessageGroupEvent, self._on_message_received)
 
-        self.bus.subscribe(MessageGroupEvent, self._handle_message)
-        self.bus.subscribe(MessagePrivateEvent, self._handle_message)
-
-    async def _handle_message(
-        self, event: Union[MessageGroupEvent, MessagePrivateEvent]
+    async def _on_message_received(
+        self, event: Union[MessagePrivateEvent, MessageGroupEvent]
     ):
-        """
-        处理消息。
-        """
-        if str(event.message).startswith(self.command_prefix):
-            self._match_command_handler(
-                str(event.message).removeprefix(self.command_prefix)
+        message = str(event.message)
+
+        if message.startswith(self.command_prefix):
+            asyncio.create_task(
+                self.router.execute_command(message.removeprefix(self.command_prefix))
             )
 
-    def _match_command_handler(self, command: str):
-        """
-        匹配命令及其处理器。
-        输入的命令不带 command_prefix。
-        """
-        splited = shlex.split(command)
-
-        handlers = self.command_handlers.get(splited[0], None)
-
-        if handlers is None:
-            return
-
-        for handler in handlers:
-            asyncio.get_event_loop().create_task(handler(command[1:]))
-
-    def register_command(self, command: str, handler: Callable):
-        """
-        注册命令。
-        """
+    def register_function_as_endpoint(self, command: str, handler: Callable):
         if command.startswith(self.command_prefix):
             develop_logger.warning(
-                f"command 参数不能含有命令前缀: {self.command_prefix}"
+                "注册 Endpoint 时的命令带有 command_prefix，可能不会被识别。"
             )
-            return
 
-        if command in self.command_handlers.keys():
-            self.command_handlers[command].add(handler)
-        else:
-            self.command_handlers[command] = set([handler])
+        return self.router.register_function_as_endpoint(
+            command=command, handler=handler
+        )
 
-    def on_command(self, command: str):
-        """
-        注册命令，装饰器函数样式。
-        """
-
+    def on(self, command: str):
         def wrapper(func: Callable):
-            self.register_command(command, func)
-
-            def inner():
-                func()
-
-            return inner
+            self.register_function_as_endpoint(command, func)
+            return func
 
         return wrapper
+
+    def run(self):
+        self._bot.run()
 
 
 __all__ = ["ChatBot"]
