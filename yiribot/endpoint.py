@@ -2,7 +2,7 @@ import asyncio
 import uuid
 import asyncer
 import shlex
-from inspect import Signature, isawaitable, signature
+from inspect import Signature, iscoroutinefunction, signature
 from typing import Any, Callable, Dict, List, Tuple
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
@@ -81,7 +81,7 @@ class Endpoint:
 
     @property
     def is_async(self):
-        return isawaitable(self.handler)
+        return iscoroutinefunction(self.handler)
 
 
 __all__ = ["Endpoint"]
