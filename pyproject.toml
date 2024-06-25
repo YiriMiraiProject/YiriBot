@@ -16,7 +16,13 @@ asyncer = "^0.0.7"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.10.0"
 flake8 = "^7.1.0"
+pytest = "^8.2.2"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.23.7"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+omit = ["*/YiriOneBot/*", "*/mirai_onebot/*", "*/tests/*"]
