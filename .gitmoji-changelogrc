@@ -1,0 +1,7 @@
+{
+  "project": {
+    "name": "YiriBot",
+    "description": "An Asynchronous, High performance and Modern ChatBot Framework.",
+    "version": "0.0.1-infdev.1"
+  }
+}
