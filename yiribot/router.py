@@ -1,8 +1,10 @@
 import asyncio
-from typing import Awaitable, Callable, Dict, Optional, Set, List
+from typing import Awaitable, Callable, Dict, Optional, Set, List, Union
 import shlex
 
 from mirai_onebot.event import EventBus
+from mirai_onebot.event.group_event import MessageGroupEvent
+from mirai_onebot.event.private_direct_event import MessagePrivateEvent
 from .endpoint import Endpoint
 from .utils import develop_logger
 
@@ -16,7 +18,13 @@ class CommandRouter:
     async def execute_command(
         self,
         command: str,
-        error_handler: Optional[Callable[[BaseException], Awaitable[None]]] = None,
+        event: Union[MessageGroupEvent, MessagePrivateEvent],
+        error_handler: Optional[
+            Callable[
+                [BaseException, Union[MessageGroupEvent, MessagePrivateEvent]],
+                Awaitable[None],
+            ]
+        ] = None,
     ):
         """执行命令，传入原始命令即可。不带 command_prefix 。"""
         endpoints = self.match_endpoint(command)
@@ -24,7 +32,7 @@ class CommandRouter:
             await self.execute_endpoints(command, endpoints)
         except BaseException as e:
             if error_handler is not None:
-                await error_handler(e)
+                await error_handler(e, event)
 
     def match_endpoint(self, command: str) -> Set[Endpoint]:
         """匹配 endpoint"""
@@ -47,7 +55,7 @@ class CommandRouter:
 
         for endpoint in endpoints:
             if endpoint.is_async:
-                async_tasks.append(asyncio.create_task(endpoint.aexec(command)))
+                await endpoint.aexec(command)
             else:
                 endpoint.exec(command)
 

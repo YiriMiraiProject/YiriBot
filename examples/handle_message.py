@@ -11,7 +11,7 @@ bot = ChatBot(
 
 
 @bot.on("hello")
-def handle_hello(arg: str):
+async def handle_hello(arg: str):
     print("hello", arg)
 
 

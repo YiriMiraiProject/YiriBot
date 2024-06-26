@@ -9,7 +9,7 @@ from pydantic.fields import FieldInfo
 
 from yiribot.exceptions import InteralException
 
-from .utils import develop_logger
+from .utils import develop_logger, core_logger
 
 
 def get_param_model(command_splited: List[str], signature: Signature) -> BaseModel:
@@ -43,17 +43,29 @@ class Endpoint:
         """
         调用 handler。内部接口
         """
-        command_splited = shlex.split(command)
+        try:
+            command_splited = shlex.split(command)
 
-        # 将函数签名解析为参数类型
-        param_model = get_param_model(
-            command_splited=command_splited, signature=signature(self.handler)
-        )
+            # 将函数签名解析为参数类型
+            param_model = get_param_model(
+                command_splited=command_splited, signature=signature(self.handler)
+            )
 
-        if self.is_async:
-            await self.handler(**get_kwargs_from_model(param_model))
-        else:
-            await asyncer.asyncify(self.handler)(**get_kwargs_from_model(param_model))
+            if self.is_async:
+                await self.handler(**get_kwargs_from_model(param_model))
+            else:
+                await asyncer.asyncify(self.handler)(
+                    **get_kwargs_from_model(param_model)
+                )
+        except BaseException as e:
+            # 同步handler无法处理错误，警告用户
+            if not self.is_async:
+                core_logger.exception(e)
+                core_logger.error(
+                    "在同步 Handler 中无法进一步处理错误，请将你的 Handler 改为异步形式！"
+                )
+            else:
+                raise e
 
     async def aexec(self, command: str):
         """
