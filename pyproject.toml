@@ -7,7 +7,7 @@ license = "LGPL-3.0 & Anti-996"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<=3.13"
 rich = "^13.7.1"
 anyio = "^4.4.0"
 asyncer = "^0.0.7"
