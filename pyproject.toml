@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "yiribot"
+version = "0.0.1-beta.1"
+description = "YiriBot 是一个轻量级、异步、高性能的机器人开发高级框架。"
+authors = ["XYCode Kerman <xycode-xyc@outlook.com>"]
+license = "LGPL-3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+yiri-onebot = "^0.0.1b1"
+rich = "^13.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
