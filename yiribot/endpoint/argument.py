@@ -1,7 +1,8 @@
 # pylint: disable=R0903
-from pydantic import BaseModel, Field
-from pydantic.fields import FieldInfo
-from typing_extensions import Optional
+from typing import Any
+
+from pydantic import BaseModel
+from typing_extensions import Callable, Optional
 
 
 class Argument(BaseModel):
@@ -14,7 +15,27 @@ class Argument(BaseModel):
     """
 
     name: str
-    field_info: FieldInfo
+    annotation: type
+    default: Optional[Any] = None
+    default_factory: Optional[Callable[[], Any]] = None
+
+    def get_default(self) -> Any | None:
+        """获取默认值
+
+        Returns:
+            指定 default 时，返回 default 的值；
+            指定 default_factory 时，返回 default_factory 的值；
+            如果 default 和 default_factory 都没有指定，返回 None；
+            如果 default 和 default_factory 都指定，返回 default。
+        """
+
+        if self.default is not None:
+            return self.default
+
+        if self.default_factory is not None:
+            return self.default_factory()
+
+        return None
 
 
 class AskingArgument(Argument):
@@ -24,7 +45,7 @@ class AskingArgument(Argument):
         greeting: 讯问语
     """
 
-    greeting: FieldInfo
+    greeting: str
 
 
 class PositionalArgument(Argument):
@@ -37,13 +58,12 @@ class PositionalArgument(Argument):
     slot: int
 
     def get_asking_argument(
-        self, greeting: Optional[FieldInfo] = None
+        self, greeting: Optional[str] = None
     ) -> AskingArgument:
         return AskingArgument(
             name=self.name,
-            field_info=self.field_info,
+            annotation=self.annotation,
             greeting=(
-                greeting if greeting is not None else
-                Field(default=f"请输入 {self.name} 的值：")
+                greeting if greeting is not None else f"请输入 {self.name} 的值："
             ),
         )

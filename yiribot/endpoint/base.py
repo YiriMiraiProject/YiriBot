@@ -32,13 +32,21 @@ class Endpoint:
 
         Args:
             raw_positional_args: 原始的 positional_args，不包含 self.command
+
+        Raises:
+            pydantic.ValidationError: 参数类型验证错误
         """
         self.positional_args.sort(key=lambda x: x.slot)
 
-        positional_args = [
-            TypeAdapter(argument_signature.field_info.annotation
-                        ).validate_python(x) for x, argument_signature in
-            zip(raw_positional_args, self.positional_args)
-        ]
+        positional_args = []
+
+        for index, argument_signature in enumerate(self.positional_args):
+            try:
+                positional_args.append(
+                    TypeAdapter(argument_signature.annotation
+                                ).validate_python(raw_positional_args[index])
+                )
+            except IndexError:
+                positional_args.append(argument_signature.get_default())
 
         await self.call(*positional_args)
