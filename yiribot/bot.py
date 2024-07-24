@@ -5,7 +5,7 @@ from yiriob.adapters.base import Adapter
 from yiriob.bot import Bot
 from yiriob.event.events import GroupMessageEvent
 
-from yiribot.endpoint.base import Endpoint
+from yiribot.endpoint.base import Endpoint, EndpointCall
 
 
 class YiriBot(Bot):
@@ -43,3 +43,21 @@ class YiriBot(Bot):
                     asyncio.create_task(handler.execute(command[1:]))
                 else:
                     await handler.execute(command[1:])
+
+    def register_command_handler(
+        self, command: str, handler: EndpointCall
+    ) -> None:
+        """注册命令处理器
+
+        Args:
+            command: 命令
+            handler: 命令处理器
+        """
+        endpoint = Endpoint(
+            call=handler, command=command, positional_args=[], asking_args=[]
+        )
+
+        if command in self.command_handlers:
+            self.command_handlers[command].add(endpoint)
+        else:
+            self.command_handlers[command] = {endpoint}
