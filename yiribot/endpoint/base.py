@@ -1,8 +1,12 @@
-from typing import Awaitable, Callable, Optional
+from inspect import Parameter, signature
+from typing import (
+    Annotated, Any, Awaitable, Callable, Optional, get_args, get_origin
+)
 
 from pydantic import TypeAdapter
 
 from .argument import AskingArgument, PositionalArgument
+from .params import AskingArgumentParam
 
 EndpointCall = Callable[..., Awaitable[None]]
 
@@ -24,8 +28,41 @@ class Endpoint:
 
         self.call = call
         self.command = command
-        self.positional_args = positional_args
+        self.positional_args = positional_args if positional_args else self.get_positional_args(
+        )
         self.asking_args = asking_args
+
+    def get_positional_args(self) -> list[PositionalArgument]:
+        """从 self.call 获取 PositionalArguments。
+
+        Returns:
+            获取到的 PositionalArguments
+        """
+        sign = signature(self.call)
+        params = sign.parameters
+
+        positional_args: list[PositionalArgument] = []
+
+        for index, (name, param) in enumerate(params.items()):
+            anno: Any = param.annotation
+
+            if anno is Parameter.empty:
+                anno = Any
+
+            if get_origin(anno) is Annotated:
+                if AskingArgumentParam() in get_args(anno):
+                    continue
+
+            positional_args.append(
+                PositionalArgument(
+                    name=name,
+                    annotation=anno,
+                    default=param.default,
+                    slot=index
+                )
+            )
+
+        return positional_args
 
     async def execute(self, raw_positional_args: list[str]) -> None:
         """执行该 Endpoint

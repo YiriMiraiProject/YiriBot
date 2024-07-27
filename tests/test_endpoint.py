@@ -1,9 +1,12 @@
 # pylint: disable=C0116
 from datetime import datetime, timedelta
+from inspect import Parameter
+from typing import Annotated, Any
 
 from pytest import mark
 
 from yiribot.endpoint import Endpoint, PositionalArgument
+from yiribot.endpoint.params import AskingArgumentParam
 
 
 @mark.asyncio
@@ -83,3 +86,22 @@ def test_argument_to_asking_argument():
     arg = PositionalArgument(name='a', slot=0, annotation=str)
     assert arg.get_asking_argument().greeting == f'请输入 {arg.name} 的值：'
     assert arg.get_asking_argument('hello').greeting == 'hello'
+
+
+def test_endpoint_get_positional_args():
+
+    async def call(p1: str, p2: Annotated[str, AskingArgumentParam()], p3=5):
+        pass
+
+    endpoint = Endpoint(call=call, command='test')
+    assert len(endpoint.get_positional_args()) == 2
+
+    assert endpoint.get_positional_args()[0].name == 'p1'
+    assert endpoint.get_positional_args()[0].annotation is str
+    assert endpoint.get_positional_args()[0].default is Parameter.empty
+    assert endpoint.get_positional_args()[0].default_factory is None
+
+    assert endpoint.get_positional_args()[1].name == 'p3'
+    assert endpoint.get_positional_args()[1].annotation is Any
+    assert endpoint.get_positional_args()[1].default == 5
+    assert endpoint.get_positional_args()[1].default_factory is None

@@ -29,20 +29,29 @@ class YiriBot(Bot):
             await self.handle_command(command)
 
     async def handle_command(
-        self, command: list[str], background: bool = True
+        self,
+        command: list[str],
+        background: bool = True,
+        timeout: int = 30
     ) -> None:
         """执行命令。原本作为一个内部方法，为了方便测试，将其设为公开方法
 
         Args:
             command: 命令
             background: 是否后台执行
+            timeout: 超时时间，当 background == False 时有效
         """
+        # tasks: list[asyncio.Task] = []
         if command[0] in self.command_handlers:
-            for handler in self.command_handlers[command[0]]:
-                if background:
-                    asyncio.create_task(handler.execute(command[1:]))
-                else:
-                    await handler.execute(command[1:])
+            # for handler in self.command_handlers[command[0]]:
+            #     tasks.append(asyncio.create_task(handler.execute(command[1:])))
+            tasks: list[asyncio.Task] = [
+                asyncio.create_task(handler.execute(command[1:]))
+                for handler in self.command_handlers[command[0]]
+            ]
+
+            if background:
+                await asyncio.wait(tasks, timeout=timeout)
 
     def register_command_handler(
         self, command: str, handler: EndpointCall
