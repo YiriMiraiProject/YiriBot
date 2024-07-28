@@ -39,12 +39,12 @@ class YiriBot(Bot):
         Args:
             command: 命令
             background: 是否后台执行
-            timeout: 超时时间，当 background == False 时有效
+            timeout: 超时时间，当 background is False 时有效
         """
-        # tasks: list[asyncio.Task] = []
+        if command[0].startswith(self.command_prefix):
+            command[0] = command[0].removeprefix(self.command_prefix)
+
         if command[0] in self.command_handlers:
-            # for handler in self.command_handlers[command[0]]:
-            #     tasks.append(asyncio.create_task(handler.execute(command[1:])))
             tasks: list[asyncio.Task] = [
                 asyncio.create_task(handler.execute(command[1:]))
                 for handler in self.command_handlers[command[0]]
